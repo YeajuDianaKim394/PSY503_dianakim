@@ -1,6 +1,8 @@
 ---
 title: "One-way ANOVA + Assumptions check"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 date: "2025-11-24"
 ---
 
@@ -207,7 +209,7 @@ mod_output
 
 <!-- Your answer here -->
 
-<!-- HINT: use `r ___` in the text to embed derived values where the ___ refers to the derived value -->
+<!-- HINT: use `r ` in the text to embed derived values where the ___ refers to the derived value -->
 
 A one-way ANOVA showed a significant effect of condition on the number of intrusive memories, *F*(`r mod_output$df[mod_output$term == "Condition"]`, `r mod_output$df[mod_output$term == "Residuals"]`) = `r round(mod_output$statistic[mod_output$term == "Condition"], 2)`, *p* = `r round(mod_output$p.value[mod_output$term == "Condition"], 3)`.
 

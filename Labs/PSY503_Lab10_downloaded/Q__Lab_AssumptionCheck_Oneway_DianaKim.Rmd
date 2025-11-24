@@ -1,0 +1,321 @@
+---
+title: "One-way ANOVA + Assumptions check"
+output: html_document
+date: "2025-11-24"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Assignment download and submission
+
+1)  Clone this repo to your computer (into your already established GitHub Repo, under a directory named Labs) <https://github.com/suyoghc/PSY503_Lab10_AssumptionChecks_OneWayAnova>
+2)  Work on the assignment with regular commits
+3)  Push the files to your own repo when you are done.
+
+# Today's lab
+
+## Experiment Design
+
+Let's use a dataset from <https://journals.sagepub.com/doi/10.1177/0956797615583071> The study looks at whether playing Tetris 24 hours after trauamatic memory formation reduces intrusive memories.
+
+Participants were randomly allocated to one of four groups and watched a video designed to be traumatic:
+
+1.  Control
+
+2.  Reactivation + Tetris
+
+3.  Tetris
+
+4.  Reactivation
+
+They measured the number of intrusive memories prior to the start of the study, then participants kept a diary to record intrusive memories about the film in the 7 days after watching it.
+
+The authors were interested in whether the combination of reactivation and playing Tetris would lead to the largest reduction in intrusive memories. You will recreate their analyses using a one-way ANOVA.
+
+## Analysis
+
+```{r}
+# Loading packages and reading data
+#install.packages('performance')
+library(pwr)
+library(effectsize)
+library(broom)
+library(afex) #n-way anova; not being used here
+library(emmeans)
+library(performance)
+library(tidyverse)
+
+# Read data 
+# Create a new variable called PID that equals row_number() to act as a participant ID
+# Convert Condition to a factor
+
+james_data <- read_csv("James_2015.csv") %>%
+  mutate(PID = row_number(),
+         Condition = as.factor(Condition)) %>% 
+  select(PID, 
+         Condition, 
+         intrusions = Days_One_to_Seven_Image_Based_Intrusions_in_Intrusion_Diary)
+
+```
+
+##### Q1.
+
+Intepret the output of the following chunk in connection to the experiment design outlined above. That is, how many participants, how many conditions? the type of measurements the DV? The values in the dataset can also be viewed via the workspace , via head(), or by just printing the dataset.
+
+```{r}
+str(james_data)
+head(james_data)
+```
+
+###### A1
+
+<!-- Your answer here -->
+
+There are 72 participants and 4 conditions. The memory intrusion (DV) has numerical values in a ratio scale?
+
+------------------------------------------------------------------------
+
+Next, we want to calculate some descriptive statistics to see some overall trends in the data. We are really interested in the scores from each experimental group rather than overall.
+
+```{r}
+#Create a violin-boxplot with the number of intrusive memories on the y-axis and condition on the x-axis (See Chapter 7 if you need a reminder).
+#Change the labels on the x-axis to something more informative for the condition names.
+james_data %>%
+  group_by(Condition) %>%
+  summarise(mean = round(mean(intrusions), 2), 
+            sd = round(sd(intrusions), 2), 
+            se = round(sd/sqrt(length(intrusions)), 2))
+```
+
+Now we can visualise the data. In the original paper they use a bar plot, but let’s use a better plot that gives us more information about the data.
+
+```{r}
+james_data %>% 
+  ggplot(aes(x = Condition, y = intrusions))+
+  geom_violin()+
+  geom_boxplot(width = .2) + 
+  geom_jitter(width = .2) +
+  scale_y_continuous(name = "Number of Intrusions") + 
+  scale_x_discrete(labels = c("Control", "Reactivation + Tetris", "Tetris", "Reactivation")) + 
+  theme_classic()
+```
+
+While violin plots are more informative than bar plots, notice that they don't give you a good idea about the sample sizes.\
+
+##### Q2a Use geom_jitter and edit the above graph into a dot+violin plot
+
+##### Q2b:
+
+By just looking at the updated graph, what is your guess (along with reasoning) for the results of carrying out an anova? First, with respect to the omnibus test, and then with respect to the pairwise contrasts. \###### A2b <!-- Your answer here -->
+
+Overall, it seems like there are some group differences in the number of intrusive memories. The range and overall shape of the violin plots vary across groups. For pairwise contrast, I think only \<Control-Reactivation+Tetris\> and \<Reactivation-Reactivation+Tetris\> pairs would show significant differences. Their median values look very much apart from each other.
+
+### One-way ANOVA
+
+We can carry out the one-way ANOVA using the aov() function.
+
+##### Q3:
+
+Fit a one-way ANOVA model to the data using the aov function. (don't change the variable name 'mod', as it gets referred to later in the assignment) \###### A3:
+
+```{r}
+?aov
+mod <- aov(intrusions~Condition, data=james_data)
+summary(mod)
+```
+
+Before running the main F-test, the key assumptions of ANOVA must be checked. Since ANOVA is a parametric test based on the normal distribution, the assumptions include the DV being interval or ratio, independence, homogeneity of variance, and that the distributions within groups (or the residuals) are normally distributed
+
+From the study design, we know that assumptions 1 and 2 are satisfied.
+
+For other checks, it turns out that adding the argument which=i, to the plot function produces different types of model diagnostic outputs when the fitted model,mode is passed as an object.
+
+***plot(mod, which = 1)***
+
+##### Q4:
+
+Iterate through different values (numbers from 1-6) of the which parameter to check modeling assumptions.
+
+1)  for normality using a Q-Q plot
+
+2)  constant variance across groups
+
+NOTE 1 that there are many options because some visualizations are better for different contexts (e.g. continuous predictors vs categorical predictors)
+
+NOTE 2: Assessing independence requires considering study design (based on theory)! However, as the number of predictors / information about them increases, one can check clustering of residuals along predictor variables. (E.g. is there a random effect due to some variable) but here we do not have other information other than the grouping and the potential fixed effects due to them)
+
+###### A4:
+
+Plots of relevant visual model checks
+
+```{r}
+#Your answer here
+plot(mod, which=1)
+plot(mod, which=2) #Q-Q plot
+plot(mod, which=3)
+plot(mod, which=4)
+plot(mod, which=5) #constant variance across groups?
+plot(mod, which=6)
+```
+
+##### Q5:
+
+The performance package has a neat function 'check_model()' which allows one to carry out a wide array of visual tests with a single command. Run this function and report your observations \###### A5:
+
+```{r}
+check_model(mod, check = "all")
+```
+
+<!-- Your answer here -->
+
+The model-predicted lines are not perfectly aligned with the observed data line, which implies some systemic discrepancies between observed and simulated data. Linearity plot looks ok, while the reference line in homogeneity of variance plot isn't quite flat. It means the variance might vary across condition groups. Normality of residuals also look quite off the grid.
+
+Now, we can check how many participants are in each condition using count():
+
+```{r}
+james_data %>% 
+  count(Condition)
+```
+
+Generally, equal sample sizes result in more robust ANOVA results (particularly when assumption of normality and homegeniety of variance are not met). Thankfully, the sample sizes are equal, and we should be OK to proceed with the ANOVA.
+
+##### Q6a:
+
+Display the results of ANOVA stored in 'mod'. Interpret what it means. And express this result the way they are generally reported in papers. \###### A6a:
+
+```{r}
+summary(mod)
+emmeans(mod, ~Condition)
+```
+
+<!-- Your answer here -->
+
+A one-way ANOVA showed a significant effect of condition on the number of intrusive memories, *F*(3, 68) = 3.80, *p* = .014.
+
+##### Q6b:
+
+As per usual we can make model fit outputs easier to work with by using tidy(). Use this output to directly extract and report the result of the omnibus test in 6a
+
+```{r}
+mod_output <- mod %>% tidy()
+mod_output
+```
+
+###### A6b:
+
+<!-- Your answer here -->
+
+<!-- HINT: use `r ___` in the text to embed derived values where the ___ refers to the derived value -->
+
+A one-way ANOVA showed a significant effect of condition on the number of intrusive memories, *F*(`r mod_output$df[mod_output$term == "Condition"]`, `r mod_output$df[mod_output$term == "Residuals"]`) = `r round(mod_output$statistic[mod_output$term == "Condition"], 2)`, *p* = `r round(mod_output$p.value[mod_output$term == "Condition"], 3)`.
+
+#### Post-hoc tests
+
+For post-hoc comparisons, the paper appears to have computed Welch t-tests but there is no mention of any multiple comparison correction! We could reproduce these results by using t.test() for each of the contrasts.
+
+For example, to compare condition 1 (the control group) with condition 2 (the reactivation plus tetris group) we could run:
+
+```{r}
+james_data %>%
+  filter(Condition %in% c("1", "2")) %>%
+  droplevels() %>% # ignore unused factor levels
+  t.test(intrusions ~ Condition, 
+         data = .)
+```
+
+Because Condition has four levels, we cannot just specify intrustion \~ Condition because a t-test compares two groups and it would not know which of the four to compare so first we have to filter the data and use a new function droplevels(). It’s important to remember that when it comes to R there are two things to consider, the data you can see and the underlying structure of that data. In the above code we use filter() to select only conditions 1 and 2 so that we can compare them. However, that does not change the fact that R “knows” that Condition has four levels - it does not matter if two of those levels do not have any observations any more, the underlying structure still says there are four groups. droplevels() tells R to remove any unused levels from a factor. You could try running the above code but without droplevels() and see what happens.
+
+However, a quicker and better way of doing this that allows you apply a correction for multiple comparisons easily is to use emmeans() which computes all possible pairwise comparison t-tests and applies a correction to the p-value.
+
+First, we use emmeans() to run the comparisons and then we can pull out the contrasts and use tidy() to make it easier to work with. (NOTE: contrasts just refers to the different pairwise comparisons between means that are possible)
+
+##### Q7:
+
+Run the code below. Which conditions are significantly different from each other? Are any of the comparisons different from the ones reported in the paper now that a correction for multiple comparisons has been applied?
+
+```{r}
+mod_pairwise <-emmeans(mod, 
+                       pairwise ~ Condition, 
+                       adjust = "bonferroni")
+
+mod_contrasts <- mod_pairwise$contrasts %>% 
+  tidy()
+
+mod_contrasts
+```
+
+###### A7
+
+<!-- Your answer here -->
+
+In the paper, the authors reported that participants showed significantly lower intrusive memories in condition 2(reactivation+tetris) than in condition 3(tetris only). But this wasn't the case after applying bonferroni correction.
+
+#### Power and effect sizes
+
+Finally, we can replicate their power analysis using pwr.anova.test from the pwr package.
+
+In the paper they say, *"On the basis of the effect size of d = 1.14 from Experiment 1, we assumed a large effect size of f = 0.4. A sample size of 18 per condition was required in order to ensure an 80% power to detect this difference at the 5% significance level."*
+
+##### Q8
+
+Fill in the parameter values below to obtain the right power analysis \###### A8
+
+```{r}
+pwr.anova.test(k = 4, 
+               f = 0.4, 
+               sig.level = 0.05, 
+               power = 0.8)
+```
+
+We have already got the effect size for the overall ANOVA, however, we should also really calculate Cohen’s d using cohens_d() from effectsize for each of the pairwise comparisons. This code is a little long because you need to do it separately for each comparison, bind them all together and then add them to mod_contrasts - just make sure your understand which bits of the code you would need to change to run this on different data. As we are binding rows and columns rather than joining, it is critical the comparisons are already in the correct order.
+
+```{r}
+# Calculate Cohen's d for all comparisons
+d_1_2 <- cohens_d(intrusions ~ Condition, 
+                 data = filter(james_data, 
+                               Condition %in% c(1, 2)) %>% 
+                   droplevels())
+
+d_1_3 <- cohens_d(intrusions ~ Condition, 
+                 data = filter(james_data, 
+                               Condition %in% c(1, 3)) %>% 
+                   droplevels()) 
+
+d_1_4 <- cohens_d(intrusions ~ Condition, 
+                 data = filter(james_data, 
+                               Condition %in% c(1, 4)) %>% 
+                   droplevels())
+
+d_2_3 <- cohens_d(intrusions ~ Condition, 
+                 data = filter(james_data, 
+                               Condition %in% c(2, 3)) %>% 
+                   droplevels())
+
+d_2_4 <- cohens_d(intrusions ~ Condition, 
+                 data = filter(james_data, 
+                               Condition %in% c(2, 4)) %>% 
+                   droplevels())
+
+d_3_4 <- cohens_d(intrusions ~ Condition, 
+                 data = filter(james_data, 
+                               Condition %in% c(3, 4)) %>% 
+                   droplevels())
+
+# Bind all the comparisons in the order of mod_contrasts
+pairwise_ds <- bind_rows(d_1_2, 
+                         d_1_3, 
+                         d_1_4,
+                         d_2_3, 
+                         d_2_4, 
+                         d_3_4)
+
+# Bind this object to the mod_contrasts object
+mod_contrasts <- mod_contrasts %>%
+  bind_cols(pairwise_ds)
+```
+
+What are your options if the data do not meet the assumptions and it’s really not appropriate to continue with a regular one-way ANOVA? As always, there are multiple options and it is a judgement call.
+
+You could run a non-parametric test, the Kruskal-Wallis for between-subject designs and the Friedman test for within-subject designs. If normality is the problem, you could try transforming the data. You could use bootstrapping too.

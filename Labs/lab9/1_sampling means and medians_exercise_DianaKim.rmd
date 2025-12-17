@@ -1,0 +1,165 @@
+---
+title: 'Bootstrapping 1: Means & Medians'
+author: "PSY 503"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+## Setup
+
+```{r}
+library(ggplot2)
+library(patchwork)
+
+set.seed(123)
+n_samples <- 1000
+sample_size <- 30
+```
+
+## Part 1: Normal Population
+
+Create a normal population.
+
+```{r}
+pop_normal <- rnorm(100000, mean = 50, sd = 10)
+```
+
+**Your task:** Take 1000 samples. Calculate mean and median each time.
+
+```{r}
+means_normal <- replicate(n_samples, {
+  #Sample from pop_normal, calculate mean
+  mean(sample(pop_normal, sample_size))
+})
+
+medians_normal <- replicate(n_samples, {
+  #TODO_1: Sample from pop_normal, calculate median
+  median(sample(pop_normal, sample_size))
+})
+```
+
+## Part 2: Skewed Population
+
+Create a skewed population.
+
+```{r}
+#You can play around with other distributions
+pop_skewed <- rexp(100000, rate = 0.1) + 30
+```
+
+**Your task:** Take 1000 samples. Calculate mean and median each time.
+
+```{r}
+means_skewed <- replicate(n_samples, {
+  #TODO_2
+  mean(sample(pop_skewed, sample_size))
+})
+
+medians_skewed <- replicate(n_samples, {
+  #TODO_3
+  median(sample(pop_skewed, sample_size))
+})
+```
+
+## Part 3: Visualize
+
+Plot the populations.
+
+```{r}
+p1 <- ggplot(data.frame(x = pop_normal), aes(x)) +
+  geom_histogram(bins = 50, fill = "gray70") +
+  labs(title = "Population: Normal") +
+  theme_minimal()
+
+p2 <- ggplot(data.frame(x = pop_skewed), aes(x)) +
+  geom_histogram(bins = 50, fill = "gray70") +
+  labs(title = "Population: Skewed") +
+  theme_minimal()
+```
+
+**Your task:** Create plots for sampling distributions.
+
+```{r}
+p3 <- ggplot(data.frame(x = means_normal), aes(x)) +
+  geom_histogram(bins = 50, fill = "steelblue") +
+  labs(title = "Means from Normal") +
+  theme_minimal()
+
+# TODO_4: Add more plots for medians_normal, means_skewed, medians_skewed
+p4 <- ggplot(data.frame(x = medians_normal), aes(x)) +
+  geom_histogram(bins = 50, fill = "steelblue") +
+  labs(title = "Medians from Normal") +
+  theme_minimal()
+
+p5 <- ggplot(data.frame(x = means_skewed), aes(x)) +
+  geom_histogram(bins = 50, fill = "steelblue") +
+  labs(title = "Means from Skewed") +
+  theme_minimal()
+
+p6 <- ggplot(data.frame(x = medians_skewed), aes(x)) +
+  geom_histogram(bins = 50, fill = "steelblue") +
+  labs(title = "Medians from Skewed") +
+  theme_minimal()
+```
+
+Combine all plots.
+
+```{r}
+# TODO_5: Use patchwork to arrange all 6 plots to facilitate comparison
+(p1 | p3 | p5) / (p2 | p4 | p6)
+```
+
+## Questions
+
+1.  Do the means plots look similar or different?
+
+    They look a little bit different. The means from skewed distribution is slightly right skewed.
+
+2.  Do the medians plots look similar or different?
+
+    They look different. The medians from skewed distribution is even more skewed than the means. Also the medians from normal distribution looks very normal.
+
+3.  Which statistic is more affected by population shape?
+
+    Median, compared to mean.
+
+4.  Calculate SD of each sampling distribution. What do you notice?
+
+    The means from both normal and skewed distributions generate similar SDs, while it's not the case for medians. SD from the medians of skewed distribution implies that the sample distribution is skewed.
+
+```{r}
+# Here are the standard deviations for the sampling distribution
+sd(means_normal)
+sd(medians_normal)
+sd(means_skewed)
+sd(medians_skewed)
+```
+
+5.  Which of the above standard deviations are the result of bootstrapping?
+
+    Those from 'means_normal' and 'means_skewed'??
+
+6.  Calculate theoretical Standard Error for means, and compare with your results
+
+    Theoretical SE for means from normal: 1.822
+
+    Bootsrapped SD for means from normal: 1.868
+
+    Theoretical SE for means from skewed: 1.818
+
+    Bootstrapped SD for means from skewed: 1.831
+
+    It seems like the statistics are more similar whey they are coming from normal distribution but more variant when coming from skewed distribution.
+
+```{r}
+sd(pop_normal) / sqrt(sample_size)
+sd(means_normal)
+
+sd(pop_skewed) / sqrt(sample_size)
+sd(means_skewed)
+```

@@ -1,0 +1,110 @@
+---
+title: 'Bootstrapping 2: Bootstrap for Correlation'
+author: "PSY 503"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+## Setup
+
+```{r}
+library(ggplot2)
+library(HistData)
+
+data(Galton)
+head(Galton)
+```
+
+## The Question
+
+What's the correlation between parent height and child height?
+
+And how uncertain are we?
+
+## Part 1: Calculate sample correlation
+
+```{r}
+# TODO_1: Calculate correlation between parent and child
+r_obs <- cor(Galton$parent, Galton$child)
+r_obs
+```
+
+## Part 2: Bootstrap
+
+Resample pairs. Calculate correlation each time.
+
+```{r}
+n_boot <- 1000
+n <- nrow(Galton)
+
+boot_cors <- replicate(n_boot, {
+  # TODO_2: Sample row indices with replacement
+  indices <- sample(n, n, replace=TRUE)
+  # Calculate correlation on resampled data
+  cor(Galton$parent[indices], Galton$child[indices])
+
+})
+```
+
+## Part 3: Visualize uncertainty
+
+```{r}
+ggplot(data.frame(r = boot_cors), aes(x = r)) +
+  geom_histogram(bins = 50, fill = "steelblue") +
+  geom_vline(xintercept = r_obs, color = "red", linewidth = 1) +
+  labs(title = "Bootstrap Distribution of Correlation",
+       x = "Correlation", y = "Count") +
+  theme_minimal()
+```
+
+## Part 4: Calculate CI
+
+Use percentiles.
+
+```{r}
+# TODO: Get 2.5th and 97.5th percentiles
+ci_lower <- quantile(boot_cors, 0.025)
+ci_upper <- quantile(boot_cors, 0.975)
+
+c(ci_lower, ci_upper)
+```
+
+## Part 5: Compare to theory
+
+Formula exists: SE ≈ (1-r²)/√n
+
+```{r}
+# Theoretical SE
+se_theory <- (1 - r_obs^2) / sqrt(n)
+se_theory
+
+# Bootstrap SE
+se_boot <- sd(boot_cors)
+se_boot
+```
+
+How close are they?
+
+0.0259 and 0.0267.. They're very close.
+
+## Questions
+
+1.  While computing the bootstrapped correlation (lines 37, 45), why do we resample in pairs? Why do we not resample any two random values?
+Since we're trying to get the correlation between the two values, the samples should be in pairs. Otherwise the values will be randomized and will likely show no correlation.
+
+2.  Is the bootstrap distribution normal?
+The graph generated in Part 3 looks normal..
+
+3.  Do theoretical and bootstrap SE match?
+They are pretty similar, so I guess they match well.
+
+4.  Which is easier to compute?
+Theoretical one was easier.. just because it had less steps?
+
+5.  What if you wanted CI for r²? Or for difference between two correlations? How would you want to calculate those?
+ci_lower and ci_upper show the bootstrapped CI I guess?? For other statistics such as R2 and correlation difference, it's worth running bootstrapping to get the better estimates.

@@ -1,0 +1,272 @@
+---
+title: "PSY 503: Lab 04 - Joins, Broom, Regression Intro"
+author: "Yeaju Diana Kim"
+date: "2025-10-01"
+output:
+  pdf_document: default
+  html_document: default
+editor_options:
+  markdown:
+    wrap: sentence
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# PSY 503: Lab 04 - Joins, Broom, Regression Intro
+
+## Walk-through Exercise
+```{r}
+library(tidyverse)
+
+df_a<- tibble (
+  ID = c(1,2,3,4,5),
+  Name = c("Alice","Bob","Charlie","David","Eve"),
+  Age = c(25,30,35,40,45)
+)
+
+df_b<- tibble (
+  ID = c(2,4,6,8),
+  City = c("New York","Los Angeles","Chicago","Houston"),
+  Salary = c(50000,60000,55000,65000)
+)
+```
+
+Play with joins (walkthrough)
+```{r}
+result <- df_a %>%
+  left_join(df_b, by = "ID")
+result
+
+result <- df_a %>%
+  right_join(df_b, by = "ID")
+result
+
+result <- df_a %>%
+  full_join(df_b, by = "ID")
+result
+
+result <- df_a %>%
+  inner_join(df_b, by = "ID")
+result
+```
+
+Carry out semi_join & anti-join with df_b as the left variable, and ID as the primary key. 
+
+i) But first, predict what you'd expect to see for either output below:
+
+Answer: When semi joined, only the rows in the left dataset(df_a) that match their ID with the right dataset(df_b) will remain. When anti joined, only the rows in df_a that do not match with df_b will remain.
+
+ii) Now carry out semi_join & anti_join
+```{r}
+result <- df_a %>%
+  semi_join(df_b, by = "ID")
+result
+
+result <- df_a %>%
+  anti_join(df_b, by = "ID")
+result
+```
+
+iii) Compare predictions against output. 
+
+Answer: It is as expected!
+
+## Lab Assignment
+
+For this lab assignment, let's imagine that Galton collected and saved height measurements of families in the following manner:
+
+a)  he denoted each of the 928 families surveyed with a family id
+b)  children's heights in families were saved in child-height.csv
+c)  parents' heights were saved in parent_height.csv
+d)  assume that for a side project, he also collected grandparents' heights in families in to grandparent_height.csv [NOTE: this never happened]
+
+These files can be found in the following Google drive directory: <https://drive.google.com/drive/folders/1buHo61YL8hw0q-Yzo8YMYUiu5QAvEQjS?usp=sharing>
+
+## Joins
+
+Your tasks are to:
+
+J1)  Using a join command, combine the dataframes for **children** and **parents** based on their family identifier. Display this dataframe. Save this dataframe for future use.
+
+```{r}
+child <- read.csv('child_height.csv')
+parent <- read.csv('parent_height.csv')
+grandparent <- read.csv('grandparent_height.csv') 
+child_parent <- read.csv('galton_child_parent_heights.csv') 
+
+head(child)
+head(parent)
+head(grandparent)
+
+child_parent_df <- child %>%
+  left_join(parent, by = "family_id")
+head(child_parent_df)
+
+```
+
+J2) Next, use the appropriate join command to merge the dataframe you derived from (1) and grandparent_height.csv file to produce a single dataframe that saves within one dataframe all the information across the original 3 .csv files. Display this dataframe
+
+```{r}
+allgen3 <- child_parent_df %>%
+  full_join(grandparent, by = "family_id")
+head(allgen3)
+```
+
+J3) While you are at it, use the appropriate join to find only those families for which all measurements across children, parents, and grandparents were available.Display this dataframe.
+
+```{r}
+allgen3_inner <- child_parent_df %>%
+  inner_join(grandparent, by = "family_id")
+allgen3_inner <- na.omit(allgen3_inner)
+head(allgen3_inner)
+```
+
+Having used different joins, lets go back to the dataframe produced in (J1), and use it for visualization and  for building regression models.
+
+## Visualization
+
+Scatterplots are the best way to visualize relationships that you are hoping to model.
+
+V1) Produce a scatterplot with children's height on the y-axis and parents' height on the x-axis. Use geom_jitter, and set transparency with the alpha parameter so that any overlapping data points are easy to spot.
+
+```{r}
+library(ggplot2)
+
+ggplot(child_parent_df, aes(x = parent_ht, y = child_ht)) +
+  geom_jitter(alpha = 0.3) 
+
+```
+
+V2) Draw the following lines on the scatterplot:
+- a horizontal line at the mean of children's heights colored in red, using geom_hline()
+- a regression line using geom_smooth() by setting its' *method* to be equal to "lm"
+- diagonal line at the points where the parents' heights are the same as the children's heights. Use geom_abline() and set the color to "dark green"
+
+```{r}
+child_mean = mean(child$child_ht)
+
+ggplot(child_parent_df, aes(x = parent_ht, y = child_ht)) +
+  geom_jitter(alpha = 0.3) +
+  geom_hline(yintercept = child_mean, color = "red") +
+  geom_smooth(method = 'lm') +
+  geom_abline(color = "darkgreen")
+
+```
+
+
+## Regression
+
+While visual results are great, we want to use the full power of lm() to find estimates of model parameters that minimize error, to make predictions, and to calculate various diagnostics of model fit. 
+
+R1) Build a null model (intercept-only) using lm() for predicting children's height. Show the result of model fitting by printing the model. Show more detailed results by using the summary() command
+
+```{r}
+empty <- lm(child_ht~NULL, data = child)
+print(empty)
+summary(empty)
+```
+
+R2)  Build a model using parents' height as the explanatory variable. Show the result of model fitting by printing the model. Show more detailed results by using the summary() command
+
+```{r}
+parent2child <- lm(child_ht~parent_ht, data = child_parent_df)
+print(parent2child)
+summary(parent2child)
+```
+
+R3)  While the print() and summary() commands are useful for displaying results, it's hard to automatically extract results of model-fitting using them.
+
+Use the tidy() command in broom to save model fitting results in a new dataframe. Using this dataframe, display the coefficients of the model fit (i.e. parameter estimates of intercept and slope) of the two models.
+
+```{r}
+library(broom)
+
+tidy(empty)
+tidy(parent2child)
+```
+
+R4)  Use the predict() function to generate predictions for both models for three different parent heights. 40 inches, 64 inches, 75 inches. Do this with a single call of predict by passing to it the appropriate data structure with these 3 values.
+
+```{r}
+sample_parent <- tibble(
+  parent_ht = c(40, 64, 75)
+)
+
+predict(parent2child, sample_parent)
+predict(empty, sample_parent)
+```
+
+R5) Actually, lets generate predictions for a larger set of values.
+
+```{r}
+x_predict <- tibble(
+  parent_ht = seq(50, 100, by = 2) #parents' heights for which you are predicting childrens' heights
+)
+### Actually I'm not sure about the line above?? Should I put 'parent_ht' for the variable here
+
+y_predict_null<- predict(empty, x_predict)
+
+y_predict_one_explanatory_variable<- predict(parent2child, x_predict)
+```
+
+R6) Let's plot these predictions on top of our previous scatterplot, by adding two geom_line() commands which uses this new data. Note that these geom_lines will be using data frames different from the original dataframe that was used for scatterplot.
+```{r}
+#two dataframes you'd use for the two geom_lines
+df_predictions_null<- x_predict %>%
+                bind_cols(y_predict_null)
+
+df_predictions_explanatory<- x_predict %>%
+                bind_cols(y_predict_one_explanatory_variable)
+
+#Reproduce your earlier scatterplot from V1 below, and add two geom_line layers
+ggplot(child_parent_df, aes(x = parent_ht, y = child_ht)) +
+  geom_jitter(alpha = 0.3) +
+  geom_line(data = df_predictions_null, aes(x = parent_ht, y = y_predict_null), color = "red") +
+  geom_line(data = df_predictions_explanatory, aes(x = parent_ht, y = y_predict_one_explanatory_variable), color = "blue")
+
+```
+
+R8) Why is this way of plotting predictions generally more useful than the method we had used so far?
+
+Answer: The prediction line was only based on observed data points before but the new line can generalize to non existing points.
+
+
+R9)  predict() function is not as special as it seems. Create your own predict functions that uses the coefficients you extracted in (R3) and plugs it into the formulation of (i) the null model and (ii) linear model with 1 explanatory variable.
+
+Find predictions when x is 40 inches, 64 inches, and 75 inches.
+
+```{r}
+my_predict_null <- function(b0, x){
+  return(rep(b0, length(x)))
+}
+
+my_predict_one_explanatory_variable <- function(b0, b1, x){
+  return(b0 + b1 * x)
+}
+
+my_predict_null(68.093, c(40, 64, 75))
+my_predict_one_explanatory_variable(b0 = 25.849, 
+                                    b1 = 0.61, 
+                                    x = c(40, 64, 75))
+```
+
+R6)  The glance() function in broom shows you many "goodness of fit" measures. Compare the r-squared values you obtain for the two models.
+
+```{r}
+glance(empty)$r.squared
+glance(parent2child)$r.squared
+```
+
+R10)  The augment() function in broom allows you to add columns having to do with model predictions to the dataset. Use augment to create expanded tables for both models. 
+
+
+```{r}
+augment(empty, data = child)
+augment(parent2child, data = child_parent_df)
+```
+
+R11) Identify the two variables in this resulting dataset that when added give you the predictor variable (i.e. child's height). What do you think they are referring to?
+
+Answer: I get the predictor variable when '.fitted' and '.resid' are added. I guess .fitted refers to the model's predicted value and .resid is the difference between the prediction and the actual outcome (=residual).

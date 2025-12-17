@@ -1,0 +1,66 @@
+---
+title: "Lab 3- Data Wrangling - Questions"
+author: "Suyog Chandramouli"
+date: "2025-09-24"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Lab 3 - Gapminder Data Wrangling Lab Assignment
+
+Using the Gapminder dataset, complete the following tasks. Use tidyverse and dplyr functions and pipes where appropriate.
+Remember to load the necessary libraries and the Gapminder dataset before starting.
+
+```{r}
+library(tidyverse)
+#install.packages('gapminder')
+library(gapminder)
+```
+
+1) Find all countries in Asia with a life expectancy greater than 75 years in 2007.
+```{r}
+gapminder
+
+gapminder %>%
+  filter(year == '2007', lifeExp > 75, continent == 'Asia')
+```
+
+2) List the top 5 countries with the highest GDP per capita in 2007, in descending order.
+
+*[Hint: head() is a verb that takes in a parameter of number of rows to show]*
+```{r}
+
+```
+
+3) Create a new dataframe with only the country, continent, and GDP per capita for the year 2007.
+```{r}
+
+```
+
+4) Add a new column called "gdp" that calculates the total GDP (GDP per capita * population) for each country in 2007.
+```{r}
+
+```
+
+5) Create two separate dataframes: one for countries in Europe and one for countries in Africa, both for the year 2007. Then bind these dataframes together.
+```{r}
+
+```
+
+6) Calculate the average life expectancy and total population for each continent in 2007.
+```{r}
+
+```
+
+
+7) Create a wide format dataframe that shows as columns the population for each country for each year
+E.g. the column names would be year, population_India, population_Canada, .... and so on.
+
+*[Hint: you will need to select only the relevant variables for generating this final output; names_]*
+
+
+```{r}
+
+```

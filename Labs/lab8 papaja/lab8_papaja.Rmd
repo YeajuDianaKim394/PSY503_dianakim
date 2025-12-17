@@ -1,0 +1,117 @@
+---
+title             : "Lab8 Papaja"
+shorttitle        : "lab8"
+
+author: 
+  - name          : "Yeaju Diana Kim"
+    affiliation   : "1"
+    corresponding : yes
+    address       : "308 Peretsman Scully Hall"
+    email         : "yk9446@princeton.edu"
+    role:
+      - "Conceptualization"
+      - "Writing - Original Draft Preparation"
+      - "Writing - Review & Editing"
+
+affiliation:
+  - id            : "1"
+    institution   : "Princeton University"
+
+authornote: |
+  Department of Psychology, Princeton University
+
+abstract: |
+  This is an example of the abstract. I took several code chunks from previous R markdown files that analyze child and parents' height.
+  
+  
+keywords          : "height, genetics, parent-child relationship"
+wordcount         : "000"
+
+bibliography      : "r-references.bib"
+
+floatsintext      : no
+linenumbers       : no
+draft             : yes
+mask              : no
+
+figurelist        : no
+tablelist         : no
+footnotelist      : no
+numbersections    : yes
+
+classoption       : "doc"
+output            : papaja::apa6_pdf
+---
+
+```{r setup, include = FALSE}
+library("papaja")
+r_refs("r-references.bib")
+```
+
+```{r analysis-preferences}
+# Seed for random number generation
+set.seed(42)
+knitr::opts_chunk$set(cache.extra = knitr::rand_seed)
+```
+
+# Methods {#sec:methods}
+
+We report how we determined our sample size, all data exclusions (if any), all manipulations, and all measures in the study. <!-- 21-word solution (Simmons, Nelson & Simonsohn, 2012; retrieved from http://ssrn.com/abstract=2160588) -->
+
+## Participants
+
+## Material
+
+## Procedure
+
+## Data analysis
+
+We used `r cite_r("r-references.bib")` for all our analyses.
+
+# Results
+
+
+```{r}
+library(ggplot2)
+library(tidyverse)
+
+child <- read.csv('child_height.csv')
+parent <- read.csv('parent_height.csv')
+
+child_parent_df <- child %>%
+  left_join(parent, by = "family_id")
+
+parent2child <- lm(child_ht~parent_ht, data = child_parent_df)
+apa_model <- apa_print(parent2child)
+```
+The model showed `r apa_model$full_result`.
+I actually do not know why the table appears under 'Data analysis' not 'Results' below.
+
+(ref:table-caption) Regression statistics.
+
+```{r}
+apa_table(
+  apa_model$table
+)
+```
+
+
+
+(ref:figure-caption) child_ht~parent_ht.
+
+```{r my-figure, fig.cap = "(ref:figure-caption)"}
+
+ggplot(child_parent_df, aes(x = parent_ht, y = child_ht)) +
+  geom_jitter(alpha = 0.3) 
+```
+
+Figure\ \@ref(fig:my-figure) shows the relationship between parent and child height.
+
+# Discussion
+
+\newpage
+
+# References
+
+::: {#refs custom-style="Bibliography"}
+:::

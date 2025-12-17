@@ -1,0 +1,312 @@
+---
+title: "PSY 503: Lab 05 - Correlations, Regression with Dummy Coding"
+author: ''
+date: "2025-10-08"
+output:
+  pdf_document: default
+  html_document: default
+editor_options:
+  markdown:
+    wrap: sentence
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# PSY 503: Lab 05 - Correlations, Regression with Dummy Coding
+
+## Correlation and Regression
+
+```{r}
+library(tidyverse)
+library(broom)
+```
+
+Let's use the galton's child parent height data as before. CSV file here: https://drive.google.com/file/d/1LK9jGBSpPr21S9_BzZhJi5Z68rB3JTEX/view?usp=sharing
+
+Your tasks are:
+
+###(1) Add two columns to the dataset: z_child_ht, and z_parent_ht which consists of standardized heights scores for the two variables
+
+[Hint: Standardization = turning measurements into z-scores.
+z-scores represent measurements as standard deviations from the mean.
+z-score(x) = (x-mean(x))/sd(x)
+
+```{r}
+main_dat <- read.csv('galton_child_parent_heights.csv') 
+head(main_dat)
+
+z_score <- function(x) {(x-mean(x))/sd(x)}
+main_dat$z_child_ht <- z_score(main_dat$child_ht)
+main_dat$z_parent_ht <- z_score(main_dat$parent_ht)
+head(main_dat)
+
+```
+
+
+###(2) Install the package "corrr" if you don't have it already.
+Use corrr::correlate() to compute the correlation matrix/ pair-wise correlations for the variables in the data-frame. Display the matrix and save it within a new dataframe. Explain the observed results.
+You can also use cor() to get the correlation matrix, but corrr::correlate() works better with tidyverse.
+```{r}
+#install.packages("corrr")
+library(corrr)
+
+correlate(main_dat)
+cor_main_matrix <- correlate(main_dat)
+```
+
+A plot of the correlation matrix can be easily made by piping your correlation dataframe to rplot(), or calling rplot with the data as a parameter. Examples can be found here: https://corrr.tidymodels.org/reference/rplot.html
+
+Plot your correlations below. Why are all the points of the same color?
+```{r}
+rplot(cor_main_matrix)
+```
+Other than '1', basically all correlation efficients are showing 0.4587. I guess it's because standardizing variables doesn't change the correlations between the variables so that all the correlation results here are depicting how 'parent height' and 'child height' are correlated.
+
+
+###(3)  Create scatterplots of child_ht vs parent-ht, and z_child_ht vs z_parent_ht.
+Add a linear regression line to the plot (it is fine to use geom_smooth).
+Annotate the plot with the correlation value you had calculated earlier.
+
+```{r}
+library(ggplot2)
+ggplot(main_dat, aes(x = parent_ht, y = child_ht)) +
+  geom_jitter(alpha = 0.3)
+
+
+ggplot(main_dat, aes(x = parent_ht, y = child_ht)) +
+  geom_jitter(alpha = 0.3) +
+  geom_smooth(method = 'lm') +
+  annotate("text", x = 65, y = 72, label = "r = 0.459", color = "darkgreen", size = 5)
+ggplot(main_dat, aes(x = z_parent_ht, y = z_child_ht)) +
+  geom_jitter(alpha = 0.3) +
+  geom_smooth(method = 'lm') +
+  annotate("text", x = -2, y = 1, label = "r = 0.459", color = "darkgreen", size = 5)
+
+```
+
+###(4)  
+####(a) Fit a linear model to the data with
+i)  child_ht as the outcome variable, and parent_ht as the predictor/explanatory variable.
+ii) z_child_ht the outcome variable, and z_parent_ht as the predictor/explanatory variable.
+
+Save these results as new r objects.
+
+```{r}
+parent2child <- lm(child_ht ~ parent_ht, data = main_dat)
+print(parent2child)
+summary(parent2child)
+
+parent_z2child_z <- lm(z_child_ht ~ z_parent_ht, data = main_dat)
+print(parent_z2child_z)
+summary(parent_z2child_z)
+```
+
+####(b) Compare the co-efficients you observe for the two cases, and explain anything salient about what you see.
+
+```{r}
+library(broom)
+
+tidy(parent2child)
+
+tidy(parent_z2child_z)
+```
+The coefficient value of the z-score model is lower than that of the original value model.
+The intercept coefficient value is extremely small in the z score model.
+
+
+####(c) Use glance() from the broom package to look at the several summary statistics obtained for these regression fits. Explain anything salient about what you see here.
+
+```{r}
+glance(parent2child)
+glance(parent_z2child_z)
+```
+Both models have the same r squared, adjusted r squared, statistic, and p values, while some other values are different.
+
+####(d) We have come across the notion of total variance in the data, as well as variance that is explained or unexplained by a model. Calculate these three values for both set of models, and write about anything you find salient.
+
+As a hint, all of these can be found with the var command.
+The values you would be finding the variance of are either the (i) fitted data / predictions, (ii) observed data, or (iii) model residuals.
+You need to map these quantities to the different types of variance.
+Feel free to use augment() from broom, or referencing obtaining these variables from within the model object (lmfit_from_4a\$fitted, lmfit_from_4a\$resid)
+
+```{r}
+augment(parent2child, data = main_dat)
+raw_var_fit <- var(parent2child$fitted) #fitted data
+raw_var_obs <- var(main_dat$child_ht) #observed data
+raw_var_res <- var(parent2child$resid) #residuals
+
+augment(parent_z2child_z, data = main_dat)
+z_var_fit <- var(parent_z2child_z$fitted) #fitted data
+z_var_obs <- var(main_dat$z_child_ht) #observed data
+z_var_res <- var(parent_z2child_z$resid) #residuals
+```
+
+####(e) Calculate explained variance/ total variance for both sets of models. Connect results here with results from 4a & 4c..
+```{r}
+raw_var_fit
+raw_var_obs
+raw_var_res
+z_var_fit
+z_var_obs
+z_var_res
+
+raw_var_fit/raw_var_obs
+
+z_var_fit/z_var_obs
+```
+For both models, it's 0.2104361. This matches with the models' r squared values that we found in 4a and 4c.
+
+
+## Part 2. Regression Intro (Continuous outcome, categorical predictors)
+
+Let's use the gapminder dataset that you have already worked with, and let's use the most recent year of data.
+
+To motivate our analysis,  fundamental question in economic development is "How does a country's geographic location relate to its economic prosperity?"
+
+One interesting observation is that countries within the same continent often have similar levels of economic development.
+Do you guess differently about a country's economy knowing that it is in Africa or that it is in Europe?
+
+Well, in addition to guessing, we can look at the data and attempt a regression analysis.
+gdpPercap could be a proxy for economic prosperity
+And we know the continents that each country belongs to.
+
+```{r}
+library(gapminder)
+gapminder
+data <- gapminder
+head(data)
+```
+
+
+With regression, we can ask questions like:
+1. Is there a difference in GDP per capita across continents?
+2. How much of the variation in countries' GDP per capita can be explained by which continent they're in?
+and so on.
+
+
+Step 1: Visualize data
+```{r}
+library(gapminder)
+library(tidyverse)
+
+# Let's use the most recent year of data
+gapminder_2007 <- gapminder %>%
+  filter(year == 2007)
+
+# let's look at the distribution of GDP per capita
+p1<- ggplot(gapminder_2007, aes(x = gdpPercap)) +
+  geom_histogram(bins = 30, fill = "skyblue", color = "black") +
+  scale_x_continuous(labels = scales::dollar_format()) +
+  labs(title = "Distribution of GDP per capita",
+       x = "GDP per capita", y = "Count") +
+  theme_minimal()
+
+print (p1)
+```
+
+This data is right-skewed. It turns out that taking the log of per capita gdp in such scenarios helps with skewness.
+(It also helps economists talk more easily about rate of change of GDP and whether that is increasing or not)
+
+Let's transform the variable and observe the results
+```{r}
+# Let's use the most recent year of data
+gapminder_2007 <- gapminder %>% 
+  filter(year == 2007) %>%
+  mutate(log_gdp = log(gdpPercap))
+
+# Visualize the distribution of GDP per capita
+p1 <- ggplot(gapminder_2007, aes(x = gdpPercap)) +
+  geom_histogram(bins = 30, fill = "skyblue", color = "black") +
+  scale_x_continuous(labels = scales::dollar_format()) +
+  labs(title = "Distribution of GDP per capita",
+       x = "GDP per capita", y = "Count") +
+  theme_minimal()
+
+# Visualize the distribution of log(GDP per capita)
+p2 <- ggplot(gapminder_2007, aes(x = log_gdp)) +
+  geom_histogram(bins = 30, fill = "lightgreen", color = "black") +
+  labs(title = "Distribution of log(GDP per capita)",
+       x = "log(GDP per capita)", y = "Count") +
+  theme_minimal()
+
+# Display plots side by side
+library(patchwork)
+p1 + p2
+### ??? this doesn't work
+
+#update.packages(ask = FALSE)
+#install.packages("patchwork", dependencies = TRUE)
+```
+
+
+The transformed values seem more like a normal distribution and with less skew. 
+So let's use log_gdp as our outcome variable. 
+
+
+###(5) Create dummy variables for the continent variable. Use the mutate() function to add new columns, one for each continent except one (which will serve as the reference category). 
+Use Africa as the reference category.
+
+[Hint:
+(1) "as.integer(continent == "Americas")" returns the value of 1 when the continent is Americas, and 0 otherwise
+(2) Note again, that you'll need one column less than all the possible continent columns]
+
+Show the first few rows of this new dataset.
+```{r}
+gapminder_dummy <- gapminder_2007 %>%
+  mutate(log_gdp = log(gdpPercap),
+         continent_America = as.integer(continent == "Americas"),
+         continent_Asia     = as.integer(continent == "Asia"),
+         continent_Europe   = as.integer(continent == "Europe"),
+         continent_Oceania  = as.integer(continent == "Oceania"))
+
+head(gapminder_dummy)
+```
+
+
+###(6) Fit two models
+Model A is the empty model that predicts log_gdp by only includes an intercept. 
+Model B is the model that predicts log_gdp based on continent.
+```{r}
+model_A <- lm(log_gdp ~ 1, data = gapminder_dummy)
+summary(model_A)
+
+model_B <- lm(log_gdp ~ continent_America + continent_Asia + continent_Europe + continent_Oceania, 
+              data = gapminder_dummy)
+summary(model_B)
+
+#model_B <- lm(log_gdp ~ continent, data = gapminder_2007)
+#summary(model_B)
+```
+
+###(7) Examine the results of the two models. What do you notice/ infer from it?
+Try using glance() for this model too, and elaborate on what you think is salient.
+```{r}
+glance(model_A)
+glance(model_B)
+```
+Model A(null model)'s r squared value is 0, which means it doesn't explain any variance in log_gdp.
+
+
+```{r}
+#added
+model_C <-  lm(log_gdp ~ continent_America + continent_Asia + continent_Europe + continent_Oceania, data = gapminder_dummy)
+print (model_C)
+print (summary(model_C))
+```
+
+###(8) Create a strip plot of log_gdp for each continent, with a box plot overlaid. This will show both the individual country data points and the overall distribution for each continent. Use ggplot2 to create this visualization. Does this visual support the conclusions you drew from the R-squared value?
+
+[Hint: Strip plots are generated by using geom_jitter();
+Given that you are overlaying the boxplot over the strip-plot, use the alpha parameter to ensure that the boxplot is not opaque and obscuring the datapoints. 
+For the boxplot, set  outlier.shape = NA, so that outliers are not plotted --- we already have the data visualized including outliers]
+
+```{r}
+ggplot(gapminder_2007, aes(x = continent, y = log_gdp)) +
+  geom_jitter(width = 0.2, alpha = 0.6, color = "darkgray") +
+  geom_boxplot(alpha = 0.4, outlier.shape = NA, fill = "skyblue") +
+  labs(x = "Continent",
+       y = "log GDP")
+```
+The continents that showed high coefficient values (e.g., Europe, Oceania) actually show very high values in GDP!

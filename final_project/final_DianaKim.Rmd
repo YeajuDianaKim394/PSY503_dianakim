@@ -1,0 +1,260 @@
+---
+title             : "Social relationship fosters shared neural representations during conversation"
+shorttitle        : "Social relationship influences neural alignment"
+
+author: 
+  - name          : "Yeaju Diana Kim"
+    affiliation   : "1"
+    corresponding : yes
+    address       : "308 Peretsman Scully Hall"
+    email         : "yk9446@princeton.edu"
+    role:
+      - "Conceptualization"
+      - "Data Analysis & Visualization"
+      - "Writing - Original Draft Preparation"
+      - "Writing - Review & Editing"
+
+affiliation:
+  - id            : "1"
+    institution   : "Princeton University"
+
+authornote: |
+  Department of Psychology, Princeton University
+
+abstract: |
+  Human conversation requires interlocutors to align their mental representations as interaction unfolds. Using fMRI hyperscanning during naturalistic conversation, we examined how social relationship influences dyadic neural alignment. Friend and stranger dyads engaged in repeated conversations while undergoing simultaneous scanning. We applied Shared Response Modeling to quantify shared neural representations using reconstruction accuracy ($r^2$) and intersubject correlation (ISC) gain. Friend dyads exhibited higher $r^2$ than stranger dyads, whereas ISC gain did not differ between groups. Additionally, greater use of first-person plural pronouns predicted higher neural alignment. These findings suggest that social familiarity shapes shared neural representational structure during conversation..
+  
+  
+keywords          : "naturalistic conversation, neural alignment, hyperscanning, shared response modeling"
+wordcount         : "1431"
+
+bibliography      : "r-references.bib"
+
+floatsintext      : yes
+linenumbers       : no
+draft             : no
+mask              : no
+
+figurelist        : no
+tablelist         : no
+footnotelist      : no
+numbersections    : yes
+
+classoption       : "doc"
+output            : papaja::apa6_pdf
+---
+
+```{r setup, include = FALSE}
+library("papaja")
+r_refs("r-references.bib")
+```
+
+```{r analysis-preferences}
+set.seed(42)
+knitr::opts_chunk$set(cache.extra = knitr::rand_seed)
+```
+
+# Introduction 
+Human conversation is a fundamentally social and dynamic process that requires interlocutors to align not only their linguistic behavior but also their underlying mental representations. Recent advances in fMRI hyperscanning have shown that conversational partners exhibit temporally coupled neural activity, a phenomenon often quantified using intersubject correlation (ISC) and related measures of neural alignment [@Hasson2004ISC, @Speer2024Hyperscanning]. Beyond moment-to-moment synchrony, emerging work suggests that successful communication may also involve deeper alignment of representational geometry across individuals, reflecting shared ways of encoding and interpreting ongoing experience. Methods such as Shared Response Modeling (SRM) and hyperalignment provide a framework for capturing these shared representational structures by projecting individual neural responses into a common latent space [@Haxby2020Hyperalignment].
+
+Despite growing interest in neural alignment during communication, it remains unclear how social relationship factors shape shared neural representations during naturalistic interaction. In the present study, we used fMRI hyperscanning during naturalistic conversation to examine how social familiarity influences dyadic neural alignment. We applied SRM to align whole-brain neural data within dyads and quantified reconstruction accuracy ($r^2$) and changes in ISC before and after SRM. We further tested whether trial-by-trial dynamics and conversational language use, specifically first-person plural pronoun use, predicted the degree of neural alignment. Together, this approach allows us to disentangle relationship-dependent differences in shared neural geometry from general alignment processes that emerge through repeated social interaction.
+
+# Methods
+
+A total of 63 dyads (126 participants) engaged in real-time naturalistic conversations while undergoing simultaneous fMRI hyperscanning. Data from twelve dyads were excluded due to technical issues, yielding a final sample of 26 friend dyads and 25 stranger dyads. More detailed participant information can be found in [@Speer2024Hyperscanning]. To quantify shared neural representations within dyads, we applied Shared Response Modeling (SRM), a hyperalignment method that projects individual participants’ neural data into a common latent feature space [@Haxby2020Hyperalignment]. For each dyad, we computed reconstruction accuracy ($r^2$), reflecting how well one partner’s brain activity could be reconstructed from the shared response space derived from both partners’ data. Higher r² values indicate greater similarity in neural representational geometry within the dyad. In addition, we computed intersubject correlation (ISC) before and after SRM alignment and derived ISC gain scores to assess the extent to which SRM improved shared neural responses [@Hasson2004ISC]. Group differences (friends vs. strangers) in r² and ISC gain were assessed using linear models. Finally, to examine whether conversational language use predicted neural alignment, we tested whether dyad-level r² values were associated with pronoun usage metrics extracted from the conversations, including first-person plural pronouns, using regression analyses.
+
+We used `r cite_r("r-references.bib")` for all our analyses.
+
+
+# Results
+
+First, we examined whether social relationship type influences the degree of dyadic neural alignment during conversation.
+
+```{r}
+# libraries
+library(ggplot2)
+library(tidyverse)
+library(lme4)
+library(lmerTest)
+library(dplyr)
+
+#tinytex::reinstall_tinytex()
+#tinytex::tlmgr_update()
+#tinytex::tlmgr_install(c("babel-english", "babel"))
+
+# dataset
+SRM_vox_df <- read.csv("https://raw.githubusercontent.com/YeajuDianaKim394/PSY503_dianakim/refs/heads/main/final_project/metrics_allruns_voxel.csv")
+SRM_vox_trials_df <- read.csv("https://raw.githubusercontent.com/YeajuDianaKim394/PSY503_dianakim/refs/heads/main/final_project/metrics_trials.csv")
+LIWC_df <- read.csv("https://raw.githubusercontent.com/YeajuDianaKim394/PSY503_dianakim/refs/heads/main/final_project/LIWC_allruns.csv")
+```
+
+(ref:r2vox-table-caption) Welch two-sample t-test comparing SRM reconstruction accuracy ($r^2$) between friend and stranger dyads.
+```{r r2vox-table}
+# t-test (r2, strangers vs. friends)
+t_r2 <- t.test(r2_vox ~ group, data = SRM_vox_df)
+apa_t_r2 <- apa_print(t_r2)
+apa_table(apa_t_r2$table, caption = "(ref:r2vox-table-caption)")
+```
+
+```{r r2vox-figure, fig.cap="SRM reconstruction accuracy ($r^2$) for friend and stranger dyads during conversation."}
+ggplot(SRM_vox_df, aes(x = group, y = r2_vox)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.6) +
+  geom_jitter(width = 0.15, alpha = 0.6) +
+  labs(
+    x = "Group",
+    y = expression(r^2~"score")
+  ) + theme_classic()
+```
+
+
+A Welch two-sample t-test revealed a significant difference in SRM reconstruction accuracy ($r^2$) between friend and stranger dyads,  `r apa_t_r2$full_result`. Friend dyads showed higher $r^2$ values ($M$ = 0.115) than stranger dyads ($M$ = 0.107), indicating greater similarity in shared neural representations during conversation (Table \@ref(tab:r2vox-table), Figure\ \@ref(fig:r2vox-figure)).
+
+
+(ref:r2trial-table-caption) Linear mixed-effects model predicting SRM reconstruction accuracy ($r^2$) from group and trial number.
+```{r r2trial-table}
+# mixed effect model (r2 ~ group * trial)
+lm_r2_trial <- lmer(r2_vox ~ group * trial + (1 | dyad),
+  data = SRM_vox_trials_df)
+apa_lm_r2_trial <- apa_print(lm_r2_trial)
+apa_table(apa_lm_r2_trial$table, caption = "(ref:r2trial-table-caption)")
+```
+ 
+```{r r2trial-figure, fig.cap="SRM reconstruction accuracy ($r^2$) across conversational trials for friend and stranger dyads."}
+ggplot(SRM_vox_trials_df,
+       aes(x = trial, y = r2_vox, color = group)) +
+  geom_point(alpha = 0.3) +
+  geom_smooth(method = "lm", se = TRUE) +
+  scale_x_continuous(breaks = 1:10) +
+  labs(
+    x = "Trial",
+    y = expression(r^2~"score")
+  ) + theme_classic()
+ 
+```
+ 
+To examine trial-wise dynamics of dyadic neural alignment, we fit a linear mixed-effects model predicting SRM reconstruction accuracy ($r^2$) from group (friend vs. stranger), trial number, and their interaction, with a random intercept for dyad. The model revealed a significant main effect of group, such that stranger dyads showed lower $r^2$ values than friend dyads ($\beta$ = -0.0083, SE = 0.0032, t = -2.60, p = .011). There was also a significant main effect of trial ($\beta$ = 0.0010, $SE$ = 0.00017, $t$ = 5.94, $p$ < .001), indicating that SRM reconstruction accuracy increased across successive trials. The group × trial interaction was not significant ($\beta$ = 0.00003, $SE$ = 0.00025, $t$ = 0.11, $p$ = .91), suggesting that the rate of increase in neural alignment over trials did not differ between friend and stranger dyads (Table \@ref(tab:r2trial-table), Figure\ \@ref(fig:r2trial-figure)).
+
+
+```{r iscvox-figure, fig.cap="ISC gain for friend and stranger dyads."}
+
+# t-test (ISC, strangers vs. friends)
+SRM_vox_df <- SRM_vox_df %>%
+  mutate(isc_vox_gain = isc_vox_after - isc_vox_before)
+
+t_isc <- t.test(isc_vox_gain ~ group, data = SRM_vox_df)
+apa_t_isc <- apa_print(t_isc)
+#apa_table(apa_t_isc$table, caption = "(ref:iscvox-table-caption)")
+
+
+ggplot(SRM_vox_df, aes(x = group, y = isc_vox_gain)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.6) +
+  geom_jitter(width = 0.15, alpha = 0.6) +
+  labs(
+    x = "Group",
+    y = "ISC gain (after - before)"
+  ) + theme_classic()
+ 
+```
+
+
+A Welch two-sample t-test revealed no significant difference in ISC gain between friend and stranger dyads, `r apa_t_isc$full_result`. Mean ISC gain was comparable for friend dyads ($M$ = 0.056) and stranger dyads ($M$ = 0.053). This result suggests that SRM improved shared neural responses to a similar extent in both friends and strangers, even though overall reconstruction accuracy differed between groups. In other words, the benefit of SRM alignment itself does not appear to depend on prior social familiarity (Figure\ \@ref(fig:iscvox-figure)).
+
+
+```{r isctrial-table}
+# mixed effect model (ISC ~ group * trial)
+SRM_vox_trials_df <- SRM_vox_trials_df %>%
+  mutate(isc_vox_gain = isc_vox_after - isc_vox_before)
+
+lm_isc_trial <- lmer(isc_vox_gain ~ group * trial + (1 | dyad),
+                    data = SRM_vox_trials_df)
+apa_lm_isc_trial <- apa_print(lm_isc_trial)
+#apa_table(apa_lm_isc_trial$table, caption = "(ref:isctrial-table-caption)")
+```
+
+```{r isctrial-figure, fig.cap="ISC gain (after - before SRM) across conversational trials for friend and stranger dyads."}
+ggplot(SRM_vox_trials_df,
+       aes(x = trial, y = isc_vox_gain, color = group)) +
+  geom_point(alpha = 0.25) +
+  geom_smooth(method = "lm", se = TRUE) +
+  scale_x_continuous(breaks = 1:10) +
+  labs(
+    x = "Trial",
+    y = "ISC gain (after - before)"
+  ) + theme_classic()
+```
+
+
+We next examined trial-wise dynamics of ISC gain using a linear mixed-effects model predicting ISC gain from group, trial number, and their interaction, with a random intercept for dyad. The model revealed no significant main effect of group or trial, and no significant group × trial interaction, `r apa_lm_isc_trial$full_result`. These results indicate that ISC gain did not systematically vary across repeated conversational trials and did not differ between friend and stranger dyads (Figure\ \@ref(fig:isctrial-figure)).
+
+
+(ref:r2we-table-caption) Linear regression predicting SRM reconstruction accuracy ($r^2$) from first-person plural pronoun (“we”) use.
+```{r r2we-table}
+# The datasets have different numbers of dyads
+SRM_LIWC_df <- inner_join(SRM_vox_df, LIWC_df, by = c("dyad", "group"))
+
+# regression (r2 ~ 'we' pronoun)
+lm_r2_we = lm(r2_vox ~ we, data = SRM_LIWC_df)
+apa_lm_r2_we <- apa_print(lm_r2_we)
+apa_table(apa_lm_r2_we$table, caption = "(ref:r2we-table-caption)")
+```
+
+```{r r2we-figure, fig.cap="Association between first-person plural pronoun use and SRM reconstruction accuracy ($r^2$)."}
+ggplot(SRM_LIWC_df, aes(x = we, y = r2_vox)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = TRUE) +
+  labs(
+    x = "'We' pronoun use",
+    y = expression(r^2~"score")
+  ) + theme_classic()
+```
+
+To examine whether conversational language use predicted dyadic neural alignment, we fit a linear regression model predicting SRM reconstruction accuracy ($r^2$) from first-person plural pronoun use ('we'). The model revealed a significant positive association between we pronoun use and $r^2$, `r apa_lm_r2_we$full_result`, indicating that dyads who used more first-person plural pronouns exhibited greater shared neural representations during conversation (Table \@ref(tab:r2we-table), Figure\ \@ref(fig:r2we-figure)).
+
+
+# Discussion
+In this study, we examined how social relationship and conversational dynamics shape dyadic neural alignment during naturalistic interaction. Using fMRI hyperscanning and Shared Response Modeling, we found that friend dyads exhibited greater reconstruction accuracy ($r^2$) than stranger dyads, indicating more similar neural representational geometry during conversation. This group difference was stable across trials, even as neural alignment increased over repeated conversations for both groups, suggesting that social familiarity confers a baseline advantage in shared representations rather than altering the rate of alignment over time. In contrast, ISC gain following SRM did not differ between friends and strangers, indicating that SRM alignment itself similarly enhanced shared neural responses across relationship types. Notably, greater use of first-person plural pronouns was associated with higher reconstruction accuracy, linking linguistic markers of shared identity to neural alignment. Together, these findings suggest that social relationships shape the structure of shared neural representations during conversation, while dynamic alignment processes unfold similarly across dyads. Future studies could extend this approach by incorporating a broader range of linguistic and conversational features, testing complementary alignment metrics such as encoding model performance, and using proper ROI network structures to examine whether relationship-dependent alignment effects are localized to specific neural systems.
+
+
+```{r power-figure, fig.cap="Simulation-based statistical power as a function of sample size."}
+# simulation-based power analysis for -- t.test(r2_vox ~ group, data = SRM_vox_df)
+SRM_vox_df$group <- factor(SRM_vox_df$group, levels = c("friend", "stranger"))
+
+mean_f  <- mean(SRM_vox_df$r2_vox[SRM_vox_df$group == "friend"],   na.rm = TRUE)
+mean_s  <- mean(SRM_vox_df$r2_vox[SRM_vox_df$group == "stranger"], na.rm = TRUE)
+sd_f <- sd(SRM_vox_df$r2_vox[SRM_vox_df$group == "friend"],   na.rm = TRUE)
+sd_s <- sd(SRM_vox_df$r2_vox[SRM_vox_df$group == "stranger"], na.rm = TRUE)
+
+sim <- function(n_per_group){
+  stranger <- rnorm(n=n_per_group, mean=mean_s, sd=sd_s)
+  friend <-rnorm(n=n_per_group, mean=mean_f, sd=sd_f)
+  return(t.test(stranger, friend, var.equal=FALSE)$p.value)
+}
+
+num_subjects <- seq(10, 100, 5)
+nsim <- 1000
+alpha <- 0.05
+
+power <- c()
+for (i in 1:length(num_subjects)) {
+  pvals <- replicate(nsim, sim(num_subjects[i]))
+  power[i] <- mean(pvals < alpha)
+}
+
+plot_df <- data.frame(num_subjects, power)
+
+ggplot(plot_df, aes(x = num_subjects, y = power)) +
+  geom_point() +
+  geom_line() +
+  theme_classic()
+```
+
+A post-hoc power analysis (Figure\ \@ref(fig:power-figure)) indicated that, given the observed group difference and variance, approximately 30 dyads per group are sufficient to achieve 80% power, with power exceeding 95% at sample sizes above 45 dyads per group. Beyond this range, additional increases in sample size yield minimal gains in statistical power. In the present study, we recruited more than 30 dyads per group; however, approximately five dyads per group were excluded due to data quality issues. Accordingly, future replication efforts should recruit beyond 35 dyads per group to ensure adequate statistical power in the final sample.
+
+
+
+\newpage
+
+# References
+
+::: {#refs custom-style="Bibliography"}
+:::
